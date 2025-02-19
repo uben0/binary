@@ -13,15 +13,28 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+            artifact_name: program
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            artifact_name: program.exe
           - os: macos-latest
             target: x86_64-apple-darwin
+            artifact_name: program
 
     steps:
     - uses: actions/checkout@v2
+    
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
         target: ${{ matrix.target }}
+        
     - run: cargo build --release --target ${{ matrix.target }}
+    
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.artifact_name }}-${{ matrix.target }}
+        tag: ${{ github.ref }}
