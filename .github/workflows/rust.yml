@@ -13,13 +13,13 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            artifact_name: program
+            artifact_name: binary
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: program.exe
+            artifact_name: binary.exe
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: program
+            artifact_name: binary
 
     steps:
     - uses: actions/checkout@v2
@@ -31,10 +31,12 @@ jobs:
         
     - run: cargo build --release --target ${{ matrix.target }}
     
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
+    - name: Build Assets
+      run: |
+        cargo build --release --target ${{ matrix.target }}
+        tar -C target/${{ matrix.target }}/release/ -czvf binary-${{ matrix.target }}.tar.gz binary${{ runner.os == 'Windows' && '.exe' || '' }}
+    - name: Upload Release Assets
+      if: ${{ github.event_name != 'workflow_dispatch' }}
+      uses: softprops/action-gh-release@v1
       with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
-        asset_name: ${{ matrix.artifact_name }}-${{ matrix.target }}
-        tag: ${{ github.ref }}
+        files: '*.tar.gz'
